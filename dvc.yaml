@@ -1,0 +1,31 @@
+# Pipeline DAG. `dvc repro` rebuilds processed data + a trained run from raw
+# with no manual steps. (Phase 0 deliverable; wired here so later phases extend it.)
+stages:
+  ingest:
+    cmd: uv run python -m src.ingest
+    deps:
+      - src/ingest.py
+      - src/config.py
+      - src/features.py
+      - data/raw/accepted_2007_to_2018Q4.csv.gz
+    params:
+      - data.subsample_rows
+      - seed
+    outs:
+      - data/interim/loans.parquet
+
+  train:
+    cmd: uv run python -m src.train --model both
+    deps:
+      - src/train.py
+      - src/features.py
+      - src/validate.py
+      - src/evaluate.py
+      - data/interim/loans.parquet
+    params:
+      - seed
+      - split
+      - target
+      - features
+      - model
+      - evaluation

@@ -1,0 +1,98 @@
+# Single source of truth for pipeline parameters. Read by src/config.py.
+seed: 42
+
+data:
+  raw_path: data/raw/accepted_2007_to_2018Q4.csv.gz
+  interim_path: data/interim/loans.parquet
+  processed_dir: data/processed
+  # Rows kept after the outcome-known filter, sampled deterministically. null => keep all.
+  subsample_rows: 300000
+
+split:
+  # Temporal split by loan issue date. Vintages, not random rows.
+  date_column: issue_d
+  train: ["2015-01-01", "2016-12-31"]
+  valid: ["2017-01-01", "2017-06-30"]
+  test: ["2017-07-01", "2018-12-31"]
+
+target:
+  source_column: loan_status
+  positive_labels:
+    - "Charged Off"
+    - "Default"
+    - "Does not meet the credit policy. Status:Charged Off"
+  negative_labels:
+    - "Fully Paid"
+    - "Does not meet the credit policy. Status:Fully Paid"
+  # Any other status (Current, Late, In Grace Period) => outcome unknown => row dropped.
+
+features:
+  # Origination-time fields only. The leakage audit (src/validate.py) guards this.
+  numeric:
+    - loan_amnt
+    - int_rate
+    - installment
+    - annual_inc
+    - dti
+    - delinq_2yrs
+    - inq_last_6mths
+    - open_acc
+    - pub_rec
+    - revol_bal
+    - revol_util
+    - total_acc
+    - mort_acc
+    - pub_rec_bankruptcies
+    - fico              # derived: mean of fico_range_low/high
+    - credit_history_years  # derived: issue_d - earliest_cr_line
+    - emp_length_years      # derived: parsed from emp_length
+    - term_months          # derived: parsed from term
+  categorical:
+    - grade
+    - sub_grade
+    - home_ownership
+    - verification_status
+    - purpose
+    - application_type
+    - addr_state
+  # Baseline logistic regression uses a deliberately small subset (~15 signals).
+  baseline:
+    - loan_amnt
+    - int_rate
+    - installment
+    - annual_inc
+    - dti
+    - fico
+    - credit_history_years
+    - emp_length_years
+    - term_months
+    - revol_util
+    - inq_last_6mths
+    - delinq_2yrs
+    - open_acc
+    - grade
+    - home_ownership
+    - purpose
+
+model:
+  lgbm:
+    objective: binary
+    n_estimators: 600
+    learning_rate: 0.03
+    num_leaves: 63
+    max_depth: -1
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+    reg_lambda: 1.0
+    min_child_samples: 50
+    n_jobs: -1
+
+evaluation:
+  precision_target: 0.5      # report recall at this precision (lender operating point)
+  psi_threshold_retrain: 0.20
+
+mlflow:
+  tracking_uri: http://localhost:5000
+  experiment: default-risk
+  registered_model: default-risk-charge-off

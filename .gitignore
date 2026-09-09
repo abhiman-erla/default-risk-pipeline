@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data (tracked by DVC, not git)
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# MLflow / local runs
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Reports / notebooks scratch
+reports/*.html
+notebooks/.ipynb_checkpoints/
+
+# Env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
