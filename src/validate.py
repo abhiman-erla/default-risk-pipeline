@@ -20,15 +20,14 @@ _APPLICATION = ["Individual", "Joint App"]
 
 
 def build_schema(cfg: Config, *, require_target: bool) -> DataFrameSchema:
-    """Construct the pandera schema from params.yaml feature lists."""
-    nullable_numeric = {
-        "emp_length_years",
-        "revol_util",
-        "dti",
-        "mort_acc",
-        "pub_rec_bankruptcies",
-        "credit_history_years",
-    }
+    """Construct the pandera schema from params.yaml feature lists.
+
+    Numeric features are all nullable: real Lending Club rows carry scattered
+    missing credit-bureau values, and the fitted ``SimpleImputer`` in the
+    training/serving pipeline is the explicit contract for filling them. The
+    schema's job here is dtype + plausible range + allowed categories + the
+    leakage guarantee -- not completeness. Range checks skip nulls.
+    """
     columns: dict[str, Column] = {}
 
     for name in cfg.features.numeric:
@@ -37,9 +36,7 @@ def build_schema(cfg: Config, *, require_target: bool) -> DataFrameSchema:
             num_checks = [Check.in_range(0, 100)]
         if name == "fico":
             num_checks = [Check.in_range(300, 900)]
-        columns[name] = Column(
-            float, checks=num_checks, nullable=name in nullable_numeric, coerce=True
-        )
+        columns[name] = Column(float, checks=num_checks, nullable=True, coerce=True)
 
     allowed_values = {
         "home_ownership": _HOME_OWNERSHIP,

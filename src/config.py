@@ -6,6 +6,7 @@ and tests share one definition of features, splits and the target.
 
 from __future__ import annotations
 
+import os
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
@@ -73,6 +74,13 @@ class MlflowConfig(BaseModel):
     tracking_uri: str
     experiment: str
     registered_model: str
+
+    @field_validator("tracking_uri", mode="after")
+    @classmethod
+    def _env_override(cls, value: str) -> str:
+        # MLFLOW_TRACKING_URI wins, so a local file store can stand in for the
+        # docker server without editing params.yaml.
+        return os.environ.get("MLFLOW_TRACKING_URI", value)
 
 
 class Config(BaseModel):
