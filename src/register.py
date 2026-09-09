@@ -54,16 +54,24 @@ def promote(
 
 
 def rollback(cfg: Config | None = None) -> str:
-    """Re-point Production at the most recent Archived version. One step."""
+    """Re-point Production at the most recent Archived version. One step.
+
+    The current Production version is archived in the same transition, so there
+    is always exactly one Production version.
+    """
     cfg = cfg or load_config()
     client = _client(cfg)
     name = cfg.mlflow.registered_model
     archived = client.get_latest_versions(name, stages=["Archived"])
     if not archived:
         raise RuntimeError("no archived version to roll back to")
+    current = client.get_latest_versions(name, stages=["Production"])
     target = max(archived, key=lambda v: int(v.version)).version
-    promote(target, "Production", cfg, archive_existing=False)
-    log.info("rolled back: %s v%s is now Production", name, target)
+    if current and current[0].version == target:
+        raise RuntimeError(f"v{target} is already Production; nothing to roll back")
+    promote(target, "Production", cfg, archive_existing=True)
+    log.info("rolled back: %s v%s is now Production (was v%s)",
+             name, target, current[0].version if current else "none")
     return target
 
 

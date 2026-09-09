@@ -63,8 +63,31 @@ Register the current run and promote it:
 ```bash
 uv run python -m src.train --model lgbm --register
 uv run python -m src.register promote <version> Production
-uv run python -m src.register rollback        # re-point Production at the previous version
+uv run python -m src.register rollback        # archive current Production, restore the previous
 ```
+
+---
+
+## Results
+
+300k subsample, temporal split — train 148,218 (2015–2016) · validate 20,540
+(2017 H1) · test 29,995 held back (2017 H2–2018). Seed 42.
+
+| Model | PR-AUC (val) | Recall @ precision 0.50 | Brier | ROC-AUC |
+|---|---|---|---|---|
+| Logistic baseline (16 features) | 0.389 | 0.089 | 0.232 | 0.696 |
+| LightGBM (defaults, 25 features) | **0.416** | **0.212** | **0.162** | 0.716 |
+| LightGBM lift | +0.027 | +0.123 (2.4×) | −0.070 | +0.020 |
+
+- PR-AUC lands in the expected **0.30–0.45** band for a leakage-free feature
+  set. A score near 0.9 would mean a post-origination column got through —
+  `assert_no_leakage` + `tests/test_features.py` guard that.
+- LightGBM's real gain is at the operating point: **recall at precision 0.50
+  more than doubles** (0.089 → 0.212).
+- Both models are still **poorly calibrated** (baseline Brier 0.232 — the
+  `class_weight="balanced"` baseline over-predicts against a ~20% base rate).
+  Calibration is a Phase 2 task; the expected-loss numbers only mean something
+  after it.
 
 ---
 
@@ -114,5 +137,9 @@ training clears a PR-AUC floor, and two runs reproduce bit-for-bit.
   `transition_model_version_stage` for version aliases (`@staging`, `@production`).
 - **Config** lives in `params.yaml`, read through `src/config.py`. Feature lists,
   split windows, the target definition, and model hyperparameters are all there.
+  `MLFLOW_TRACKING_URI` (env / `.env`) overrides `params.yaml` — e.g.
+  `MLFLOW_TRACKING_URI=file:./mlruns` to run without the server.
+- **Windows:** `src/config.py` forces UTF-8 on stdout/stderr so the MLflow
+  client's run-URL print (it uses an emoji) doesn't crash on the cp1252 console.
 - `dvc.yaml` wires `ingest → train` so `dvc repro` rebuilds from raw with no
   manual steps once you `uv sync --extra pipeline && dvc init`.

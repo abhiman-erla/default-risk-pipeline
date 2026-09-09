@@ -6,7 +6,9 @@ and tests share one definition of features, splits and the target.
 
 from __future__ import annotations
 
+import contextlib
 import os
+import sys
 from datetime import date
 from functools import lru_cache
 from pathlib import Path
@@ -14,6 +16,14 @@ from pathlib import Path
 import yaml
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
+
+# The MLflow client prints run URLs with an emoji; the default Windows console
+# codec (cp1252) can't encode it and raises UnicodeEncodeError mid-run. Force
+# UTF-8 on the standard streams. Every entrypoint imports this module.
+if sys.platform == "win32":
+    for _stream in (sys.stdout, sys.stderr):
+        with contextlib.suppress(AttributeError, ValueError):
+            _stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PARAMS = REPO_ROOT / "params.yaml"
