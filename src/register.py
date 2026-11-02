@@ -70,8 +70,12 @@ def rollback(cfg: Config | None = None) -> str:
     if current and current[0].version == target:
         raise RuntimeError(f"v{target} is already Production; nothing to roll back")
     promote(target, "Production", cfg, archive_existing=True)
-    log.info("rolled back: %s v%s is now Production (was v%s)",
-             name, target, current[0].version if current else "none")
+    log.info(
+        "rolled back: %s v%s is now Production (was v%s)",
+        name,
+        target,
+        current[0].version if current else "none",
+    )
     return target
 
 
