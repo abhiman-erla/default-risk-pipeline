@@ -14,15 +14,15 @@ permissions:
 
 jobs:
   secrets-scan:
-    uses: abhiman-erla/ci-templates/.github/workflows/secret-scan.yml@11abec65f0c86a0f95e32250f9656c4cbd628b1f # v1.2.0
+    uses: abhiman-erla/ci-templates/.github/workflows/secret-scan.yml@590537b0bf92f11c36470b118c6e18410cce5d74 # v1.4.0
 
   workflow-lint:
-    uses: abhiman-erla/ci-templates/.github/workflows/workflow-lint.yml@11abec65f0c86a0f95e32250f9656c4cbd628b1f # v1.2.0
+    uses: abhiman-erla/ci-templates/.github/workflows/workflow-lint.yml@590537b0bf92f11c36470b118c6e18410cce5d74 # v1.4.0
 
   python:
     # ruff check, ruff format --check, mypy, pytest with coverage: the same four
     # gates as before, run through uv with the lockfile.
-    uses: abhiman-erla/ci-templates/.github/workflows/python-ci.yml@11abec65f0c86a0f95e32250f9656c4cbd628b1f # v1.2.0
+    uses: abhiman-erla/ci-templates/.github/workflows/python-ci.yml@590537b0bf92f11c36470b118c6e18410cce5d74 # v1.4.0
     permissions:
       contents: read
     with:
